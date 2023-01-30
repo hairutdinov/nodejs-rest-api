@@ -20,7 +20,16 @@ exports.getPosts = (req, res, next) => {
 
 exports.createPost = (req, res, next) => {
     const { title, content } = req.body
+    const image = req.file
     const errors = validationResult(req)
+
+    if (!image) {
+        const error = new Error('No image provided')
+        error.statusCode = 422
+        throw error
+    }
+
+    const imageUrl = image.path
 
     if (!errors.isEmpty()) {
         const error = new Error('Validation failed, entered data is incorrect.')
@@ -31,7 +40,7 @@ exports.createPost = (req, res, next) => {
     const post = new Post({
         title,
         content,
-        imageUrl: 'images/book.jpeg',
+        imageUrl,
         creator: {
             name: 'Bulat'
         },
