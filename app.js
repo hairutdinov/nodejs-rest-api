@@ -2,6 +2,9 @@ const express = require('express')
 const feedRouter = require('./routes/feed')
 const bodyParser = require('body-parser')
 
+require ('dotenv').config()
+
+const mongoose = require('mongoose')
 
 const app = express()
 
@@ -17,4 +20,14 @@ app.use((req, res, next) => {
 
 app.use('/feed', feedRouter)
 
-app.listen(8180)
+mongoose.set('strictQuery', false)
+mongoose.connect(process.env.MONGO_CONNECTION_URI)
+    .then(r => {
+        console.log('Connected successfully to MongoDB server');
+        app.listen(8180)
+    })
+    .catch(e => {
+        console.error(e)
+    })
+    .catch(console.error)
+
