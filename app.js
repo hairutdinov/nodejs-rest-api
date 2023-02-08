@@ -1,5 +1,6 @@
 const express = require('express')
 const feedRouter = require('./routes/feed')
+const authRouter = require('./routes/auth')
 const bodyParser = require('body-parser')
 const path = require('path')
 const multer = require('multer')
@@ -46,10 +47,12 @@ app.use((req, res, next) => {
 })
 
 app.use('/feed', feedRouter)
+app.use('/auth', authRouter)
 
 app.use((error, req, res, next) => {
     res.status(error.statusCode || 500).json({
         message: error.message,
+        data: error.data
     })
 })
 
