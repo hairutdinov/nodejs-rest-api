@@ -4,12 +4,22 @@ const fs = require('fs')
 const path = require('path')
 
 exports.getPosts = (req, res, next) => {
-    Post
-        .find()
+    const currentPage = req.query.page || 1
+    const perPage = 2
+    let totalItems
+    Post.find()
+        .countDocuments()
+        .then(c => {
+            totalItems = c
+            return Post.find()
+                .skip((currentPage - 1) * perPage)
+                .limit(perPage)
+        })
         .then(posts => {
             res.status(200).json({
                 message: 'Posts fetched',
                 posts,
+                totalItems,
             })
         })
         .catch(e => {
@@ -22,8 +32,15 @@ exports.getPosts = (req, res, next) => {
 
 exports.createPost = (req, res, next) => {
     const { title, content } = req.body
-    const image = req.file
     const errors = validationResult(req)
+
+    if (!errors.isEmpty()) {
+        const error = new Error('Validation failed, entered data is incorrect.')
+        error.statusCode = 422
+        throw error
+    }
+
+    const image = req.file
 
     if (!image) {
         const error = new Error('No image provided')
@@ -32,12 +49,6 @@ exports.createPost = (req, res, next) => {
     }
 
     const imageUrl = image.path
-
-    if (!errors.isEmpty()) {
-        const error = new Error('Validation failed, entered data is incorrect.')
-        error.statusCode = 422
-        throw error
-    }
 
     const post = new Post({
         title,
