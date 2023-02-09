@@ -59,8 +59,12 @@ app.use((error, req, res, next) => {
 mongoose.set('strictQuery', false)
 mongoose.connect(process.env.MONGO_CONNECTION_URI)
     .then(r => {
-        console.log('Connected successfully to MongoDB server');
-        app.listen(8180)
+        console.log('Connected successfully to MongoDB server')
+        const server = app.listen(8180)
+        const io = require('./socket').init(server)
+        io.on('connection', socket => {
+            console.log('a user connected')
+        });
     })
     .catch(e => {
         console.error(e)

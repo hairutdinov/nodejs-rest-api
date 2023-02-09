@@ -4,6 +4,8 @@ const fs = require('fs')
 const path = require('path')
 const User = require('../models/user')
 
+const io = require('../socket')
+
 exports.getPosts = (req, res, next) => {
     const currentPage = req.query.page || 1
     const perPage = 2
@@ -13,6 +15,8 @@ exports.getPosts = (req, res, next) => {
         .then(c => {
             totalItems = c
             return Post.find()
+                .populate('creator')
+                .sort({ createdAt: -1 })
                 .skip((currentPage - 1) * perPage)
                 .limit(perPage)
         })
@@ -31,7 +35,7 @@ exports.getPosts = (req, res, next) => {
         })
 }
 
-exports.createPost = (req, res, next) => {
+exports.createPost = async (req, res, next) => {
     const { title, content } = req.body
     const errors = validationResult(req)
     let creator
@@ -59,30 +63,34 @@ exports.createPost = (req, res, next) => {
         creator: req.userId,
     })
 
-    post.save()
-        .then(result => {
-            console.log(result)
-            return User.findById(req.userId)
-        })
-        .then(u => {
-            creator = u
-            u.posts.push(post)
-            return u.save()
-        })
-        .then(result => {
-            res.status(201).json({
-                message: 'Post created successfully!',
-                post: post,
-                creator: { _id: creator._id, name: creator.name }
-            })
-        })
-        .catch(e => {
-            if (!e.statusCode) {
-                e.statusCode = 500
+    try {
+        await post.save()
+        const user = await User.findById(req.userId)
+        user.posts.push(post)
+        await user.save()
+
+        io.getIO().emit('posts', {
+            action: 'create',
+            post: {
+                ...post._doc,
+                creator: {
+                    id: req.userId,
+                    name: user.name
+                }
             }
-            next(e)
         })
 
+        res.status(201).json({
+            message: 'Post created successfully!',
+            post: post,
+            creator: { _id: user._id, name: user.name }
+        })
+    } catch (e) {
+        if (!e.statusCode) {
+            e.statusCode = 500
+        }
+        next(e)
+    }
 }
 
 exports.getPost = (req, res, next) => {
