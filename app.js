@@ -1,9 +1,10 @@
 const express = require('express')
-const feedRouter = require('./routes/feed')
-const authRouter = require('./routes/auth')
 const bodyParser = require('body-parser')
 const path = require('path')
 const multer = require('multer')
+const { graphqlHTTP } = require('express-graphql')
+const graphqlSchema = require('./graphql/schema')
+const graphqlResolvers = require('./graphql/resolvers')
 
 require ('dotenv').config()
 
@@ -46,8 +47,10 @@ app.use((req, res, next) => {
     next()
 })
 
-app.use('/feed', feedRouter)
-app.use('/auth', authRouter)
+app.use('/graphql', graphqlHTTP({
+    schema: graphqlSchema,
+    rootValue: graphqlResolvers
+}))
 
 app.use((error, req, res, next) => {
     res.status(error.statusCode || 500).json({
@@ -59,12 +62,8 @@ app.use((error, req, res, next) => {
 mongoose.set('strictQuery', false)
 mongoose.connect(process.env.MONGO_CONNECTION_URI)
     .then(r => {
+        app.listen(8180)
         console.log('Connected successfully to MongoDB server')
-        const server = app.listen(8180)
-        const io = require('./socket').init(server)
-        io.on('connection', socket => {
-            console.log('a user connected')
-        });
     })
     .catch(e => {
         console.error(e)
