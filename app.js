@@ -5,12 +5,13 @@ const multer = require('multer')
 const { graphqlHTTP } = require('express-graphql')
 const graphqlSchema = require('./graphql/schema')
 const graphqlResolvers = require('./graphql/resolvers')
-const auth = require('./middleware/auth');
+const auth = require('./middleware/auth')
+const helmet = require('helmet')
 
 require ('dotenv').config()
 
 const mongoose = require('mongoose')
-const fs = require("fs");
+const fs = require("fs")
 
 const fileStorage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -29,13 +30,15 @@ const fileFilter = (req, file, callback) => {
         case 'image/jpg':
         case 'image/jpeg':
             callback(null, true)
-            break;
+            break
         default:
             callback(null, false)
     }
 }
 
 const app = express()
+
+app.use(helmet())
 
 // app.use(bodyParser.urlencoded()) // x-www-form-encoded <form>
 app.use(bodyParser.json()) // application/json
@@ -52,7 +55,7 @@ app.use((req, res, next) => {
     next()
 })
 
-app.use(auth);
+app.use(auth)
 
 app.put('/post-image', (req, res, next) => {
     if (!req.isAuth) {
@@ -94,9 +97,9 @@ app.use((error, req, res, next) => {
 })
 
 mongoose.set('strictQuery', false)
-mongoose.connect(process.env.MONGO_CONNECTION_URI)
+mongoose.connect(`mongodb+srv://${ process.env.MONGO_USER }:${ process.env.MONGO_PASSWORD }@cluster0.4opfk7m.mongodb.net/${ process.env.MONGO_DEFAULT_DATABASE }?w=majority`)
     .then(r => {
-        app.listen(8180)
+        app.listen(process.env.PORT || 8180)
         console.log('Connected successfully to MongoDB server')
     })
     .catch(e => {
