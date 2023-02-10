@@ -110,5 +110,33 @@ module.exports = {
             createdAt: createdPost.createdAt.toISOString(),
             updatedAt: createdPost.updatedAt.toISOString()
         }
+    },
+    posts: async function({ page }, req) {
+        if (!req.isAuth) {
+            const e = new Error('Not authenticated!');
+            e.statusCode = 401;
+            throw e;
+        }
+        if (!page) {
+            page = 1;
+        }
+        const perPage = 2;
+        const totalPosts = await Post.find().countDocuments();
+        const posts = await Post.find()
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * perPage)
+            .limit(perPage)
+            .populate('creator');
+        return {
+            posts: posts.map(p => {
+                return {
+                    ...p._doc,
+                    _id: p._id.toString(),
+                    createdAt: p.createdAt.toISOString(),
+                    updatedAt: p.updatedAt.toISOString()
+                };
+            }),
+            totalPosts: totalPosts
+        };
     }
 }
