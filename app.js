@@ -7,6 +7,7 @@ const graphqlSchema = require('./graphql/schema')
 const graphqlResolvers = require('./graphql/resolvers')
 const auth = require('./middleware/auth')
 const helmet = require('helmet')
+const compression = require('compression')
 
 require ('dotenv').config()
 
@@ -39,6 +40,7 @@ const fileFilter = (req, file, callback) => {
 const app = express()
 
 app.use(helmet())
+app.use(compression())
 
 // app.use(bodyParser.urlencoded()) // x-www-form-encoded <form>
 app.use(bodyParser.json()) // application/json
